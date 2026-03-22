@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Resfebe Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #f0f4ff;
+  --surface:  #ffffff;
+  --primary:  #4f46e5;
+  --plight:   #818cf8;
+  --accent:   #f59e0b;
+  --correct:  #10b981;
+  --wrong:    #ef4444;
+  --text:     #1e1b4b;
+  --muted:    #6b7280;
+  --shadow:   0 4px 24px rgba(79,70,229,.13);
+}
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  background-image:
+    radial-gradient(circle at 10% 10%, #c7d2fe44 0%, transparent 50%),
+    radial-gradient(circle at 90% 90%, #fde68a33 0%, transparent 50%);
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: .5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .4rem;
+  flex-shrink: 0;
+  z-index: 10;
+  border-bottom: 2px solid #e0e7ff;
+  flex-wrap: wrap;
+}
+.header-left { display: flex; flex-direction: column; }
+.header-left h1 {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+  color: var(--primary); line-height: 1; letter-spacing: .5px;
+}
+.header-left p { font-size: clamp(.58rem, 1.8vw, .72rem); color: var(--muted); font-weight: 600; margin-top: 1px; }
+
+.header-right { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+/* speed selector */
+.speed-selector { display: flex; gap: .25rem; }
+.spd-btn {
+  font-family: 'Nunito', sans-serif; font-weight: 800;
+  font-size: .7rem; padding: .25rem .6rem;
+  border-radius: 99px; border: 2px solid #c7d2fe;
+  background: var(--bg); color: var(--muted); cursor: pointer;
+  transition: all .15s;
+}
+.spd-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.spd-btn:hover:not(.active) { border-color: var(--plight); color: var(--primary); }
+
+/* scoreboard */
+.scoreboard { display: flex; gap: .4rem; }
+.score-box {
+  display: flex; flex-direction: column; align-items: center;
+  border-radius: 10px; padding: .25rem .6rem; min-width: 48px; border: 2px solid transparent;
+}
+.score-box.cb { border-color: #bbf7d0; background: #f0fdf4; }
+.score-box.wb { border-color: #fecaca; background: #fef2f2; }
+.score-box.pb { border-color: #c7d2fe; background: #eef2ff; min-width: 62px; }
+.slabel { font-size: .55rem; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
+.score-box.cb .slabel { color: var(--correct); }
+.score-box.wb .slabel { color: var(--wrong); }
+.score-box.pb .slabel { color: var(--primary); }
+.sval { font-family: 'Fredoka One', cursive; font-size: 1.3rem; line-height: 1; }
+.score-box.cb .sval { color: var(--correct); }
+.score-box.wb .sval { color: var(--wrong); }
+.score-box.pb .sval { color: var(--primary); }
+@keyframes ptBump { 0%{transform:scale(1)} 40%{transform:scale(1.4)} 100%{transform:scale(1)} }
+.bump { animation: ptBump .3s ease; }
+.pt-float {
+  position: fixed; font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+  pointer-events: none; z-index: 200; animation: ptFloat .85s ease forwards;
+}
+@keyframes ptFloat {
+  0%  { opacity:1; transform: translateY(0) scale(1); }
+  100%{ opacity:0; transform: translateY(-55px) scale(1.2); }
+}
+
+/* ── COMBO BAR ── */
+#combo-bar {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: .45rem;
+  background: #ffffffcc; border-radius: 99px;
+  padding: .28rem .9rem .28rem .6rem;
+  box-shadow: 0 2px 12px rgba(79,70,229,.15);
+  backdrop-filter: blur(6px);
+  z-index: 20; transition: opacity .3s;
+  opacity: 0; pointer-events: none;
+}
+#combo-bar.visible { opacity: 1; }
+#combo-flame { font-size: 1.2rem; line-height: 1; }
+#combo-text {
+  font-family: 'Fredoka One', cursive; font-size: 1rem;
+  color: var(--primary); line-height: 1; white-space: nowrap;
+}
+#combo-text span { color: var(--accent); }
+/* combo level colors */
+#combo-bar.lv1 { background: #ffffffcc; }
+#combo-bar.lv2 { background: #fef9eacc; box-shadow: 0 2px 14px rgba(245,158,11,.25); }
+#combo-bar.lv3 { background: #fff7edcc; box-shadow: 0 2px 16px rgba(249,115,22,.3); }
+#combo-bar.lv4 { background: #fef2f2cc; box-shadow: 0 2px 18px rgba(239,68,68,.35); }
+
+/* combo badge on info card */
+.combo-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff; font-family: 'Fredoka One', cursive;
+  font-size: .8rem; border-radius: 99px; padding: .2rem .7rem;
+  margin-left: .3rem; vertical-align: middle;
+  animation: badgePop .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes badgePop { from{transform:scale(0)} to{transform:scale(1)} }
+
+/* ── GAME AREA ── */
+#game-area {
+  flex: 1; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%);
+}
+#game-area::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: repeating-linear-gradient(90deg, var(--wrong) 0, var(--wrong) 12px, transparent 12px, transparent 20px);
+  opacity: .35;
+}
+
+/* ── FALLING CARD ── */
+.falling-card {
+  position: absolute;
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(79,70,229,.18), 0 2px 8px rgba(0,0,0,.08);
+  padding: .8rem 1.2rem;
+  text-align: center;
+  min-width: 170px; max-width: 82vw;
+  border: 2.5px solid #c7d2fe;
+  z-index: 5;
+}
+.falling-card .emoji-line { font-size: clamp(1.5rem, 5vw, 2.2rem); line-height: 1.3; letter-spacing: 2px; }
+.falling-card .card-num   { font-size: .6rem; color: var(--plight); font-weight: 800; letter-spacing: 1px; margin-bottom: .18rem; text-transform: uppercase; }
+
+@keyframes correctPop {
+  0%  { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.18); opacity: .8; }
+  100%{ transform: scale(0);  opacity: 0; }
+}
+@keyframes wrongShake {
+  0%,100%{ transform: translateX(0); }
+  20%    { transform: translateX(-10px); }
+  40%    { transform: translateX(10px); }
+  60%    { transform: translateX(-6px); }
+  80%    { transform: translateX(6px); }
+}
+
+/* ── INFO PANEL (correct reveal) ── */
+#info-panel {
+  position: absolute; inset: 0;
+  background: rgba(15,12,41,.82);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 30; opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+  backdrop-filter: blur(3px);
+}
+#info-panel.show { opacity: 1; pointer-events: all; }
+.info-card {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 1.4rem 1.6rem;
+  max-width: 360px; width: 90vw;
+  box-shadow: 0 16px 60px rgba(0,0,0,.35);
+  animation: popIn .3s cubic-bezier(.34,1.56,.64,1);
+  position: relative;
+}
+@keyframes popIn { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+
+.info-word {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.8rem; color: var(--primary);
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  margin-bottom: .3rem;
+}
+.info-tr   { color: var(--muted); font-weight: 700; font-size: .95rem; margin-bottom: .7rem; }
+.info-ex   { background: #f0f4ff; border-radius: 12px; padding: .6rem .8rem; font-size: .88rem; line-height: 1.55; }
+.info-ex .en { color: var(--text); font-weight: 600; }
+.info-ex .en em { color: var(--primary); font-style: normal; font-weight: 800; }
+.info-ex .tr-ex{ color: var(--muted); font-size: .82rem; margin-top: .3rem; }
+
+/* countdown ring */
+.countdown-wrap {
+  display: flex; align-items: center; justify-content: center; margin-top: .9rem; gap: .6rem;
+}
+.countdown-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+.countdown-ring svg { transform: rotate(-90deg); }
+.countdown-ring circle.bg { fill: none; stroke: #e0e7ff; stroke-width: 4; }
+.countdown-ring circle.fg {
+  fill: none; stroke: var(--primary); stroke-width: 4;
+  stroke-dasharray: 113; stroke-dashoffset: 0;
+  transition: stroke-dashoffset .9s linear, stroke .3s;
+  stroke-linecap: round;
+}
+.countdown-num {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: 'Fredoka One', cursive; font-size: 1.1rem; color: var(--primary);
+}
+.countdown-label { font-size: .78rem; color: var(--muted); font-weight: 700; }
+
+/* speak button */
+.speak-btn {
+  background: none; border: 2px solid var(--correct); color: var(--correct);
+  border-radius: 99px; font-family: 'Nunito', sans-serif; font-weight: 800;
+  font-size: .8rem; padding: .28rem .8rem; cursor: pointer;
+  display: inline-flex; align-items: center; gap: .3rem;
+  transition: background .15s, transform .1s;
+}
+.speak-btn:hover { background: #d1fae5; transform: scale(1.04); }
+.speak-btn.speaking { animation: speakPulse .5s infinite alternate; }
+@keyframes speakPulse { from{opacity:1} to{opacity:.4} }
+
+/* ── TOAST ── */
+#toast {
+  position: absolute; top: 44%; left: 50%;
+  transform: translate(-50%,-50%) scale(0);
+  background: var(--wrong); color: #fff;
+  font-family: 'Fredoka One', cursive; font-size: 1.2rem;
+  padding: .5rem 1.4rem; border-radius: 99px;
+  z-index: 20; pointer-events: none;
+  transition: transform .13s; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(239,68,68,.4);
+}
+#toast.show  { transform: translate(-50%,-50%) scale(1); }
+#toast.ok    { background: var(--correct); box-shadow: 0 4px 20px rgba(16,185,129,.4); }
+
+/* ── ANSWER POOL ── */
+#answer-pool {
+  background: var(--surface);
+  border-top: 3px solid #e0e7ff;
+  padding: .55rem .7rem .65rem;
+  flex-shrink: 0;
+  box-shadow: 0 -4px 20px rgba(79,70,229,.08);
+  min-height: 72px;
+  max-height: 36vh;
+  overflow-y: auto;
+  position: relative;
+}
+#answer-pool-inner {
+  display: flex; flex-wrap: wrap;
+  gap: .38rem;
+  /* NOT justify-content:center — positions set via margin/random */
+}
+.ans-btn {
+  font-family: 'Nunito', sans-serif; font-weight: 700;
+  font-size: clamp(.68rem, 2.4vw, .86rem);
+  padding: .36rem .82rem; border-radius: 99px;
+  border: 2px solid #c7d2fe; background: var(--bg);
+  color: var(--text); cursor: pointer;
+  transition: transform .12s, background .12s, border-color .12s, box-shadow .12s;
+  white-space: nowrap; position: relative;
+}
+.ans-btn:hover:not(:disabled) {
+  background: #e0e7ff; border-color: var(--plight);
+  transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79,70,229,.15);
+}
+.ans-btn:active:not(:disabled) { transform: scale(.95); }
+.ans-btn:disabled { opacity: 0; pointer-events: none; }
+.ans-btn.flash-wrong {
+  background: #fee2e2; border-color: var(--wrong); color: var(--wrong);
+  animation: btnShake .35s ease;
+}
+@keyframes btnShake {
+  0%,100%{ transform: translateX(0); }
+  25%    { transform: translateX(-5px); }
+  75%    { transform: translateX(5px); }
+}
+.ans-btn.flash-correct { background: #d1fae5; border-color: var(--correct); color: var(--correct); }
+
+/* scrollbar */
+#answer-pool::-webkit-scrollbar { width: 4px; }
+#answer-pool::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 99px; }
+
+/* ── PARTICLES ── */
+.particle {
+  position: absolute; pointer-events: none; font-size: 1.2rem;
+  animation: pfly .75s ease forwards; z-index: 15;
+}
+@keyframes pfly {
+  from{ transform: translate(0,0) scale(1); opacity: 1; }
+  to  { transform: translate(var(--dx),var(--dy)) scale(0); opacity: 0; }
+}
+
+/* ── OVERLAY ── */
+#overlay {
+  position: fixed; inset: 0; background: #1e1b4bee;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; backdrop-filter: blur(6px);
+}
+.overlay-card {
+  background: var(--surface); border-radius: 28px;
+  padding: 2rem 1.8rem; text-align: center;
+  max-width: 360px; width: 90vw;
+  box-shadow: 0 24px 80px rgba(0,0,0,.3);
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+.overlay-card h2 { font-family: 'Fredoka One', cursive; font-size: 1.9rem; color: var(--primary); margin-bottom: .35rem; }
+.overlay-card p  { color: var(--muted); font-size: .92rem; margin-bottom: 1.2rem; line-height: 1.5; }
+.final-scores    { display: flex; gap: .8rem; justify-content: center; margin-bottom: 1.2rem; }
+.fsb { flex: 1; border-radius: 14px; padding: .7rem; font-family: 'Fredoka One', cursive; }
+.fsb.c { background: #f0fdf4; color: var(--correct); }
+.fsb.w { background: #fef2f2; color: var(--wrong); }
+.fsb.p { background: #eef2ff; color: var(--primary); }
+.fsb .fsv { font-size: 2rem; line-height: 1; }
+.fsb .fsl { font-size: .68rem; font-family: 'Nunito', sans-serif; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+/* wrong list in end screen */
+.wrong-list-wrap {
+  text-align: left; margin-bottom: 1.1rem;
+  max-height: 38vh; overflow-y: auto;
+}
+.wrong-list-wrap h3 { font-size: .8rem; font-weight: 800; color: var(--wrong); text-transform: uppercase; letter-spacing: .7px; margin-bottom: .5rem; text-align: center; }
+.wrong-item {
+  display: flex; align-items: flex-start; gap: .5rem;
+  background: #fff5f5; border: 1.5px solid #fecaca; border-radius: 10px;
+  padding: .45rem .7rem; margin-bottom: .35rem; font-size: .8rem;
+}
+.wrong-item .wi-emoji { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.wrong-item .wi-answer { font-weight: 800; color: var(--wrong); }
+.wrong-item .wi-tr { color: var(--muted); font-size: .75rem; }
+.wrong-list-wrap::-webkit-scrollbar { width: 4px; }
+.wrong-list-wrap::-webkit-scrollbar-thumb { background: #fecaca; border-radius: 99px; }
+.big-btn {
+  background: linear-gradient(135deg, var(--primary), #7c3aed); color: #fff;
+  font-family: 'Fredoka One', cursive; font-size: 1.15rem;
+  border: none; border-radius: 99px; padding: .75rem 2rem;
+  cursor: pointer; box-shadow: 0 6px 20px rgba(79,70,229,.35);
+  transition: transform .15s; letter-spacing: .5px;
+}
+.big-btn:hover { transform: scale(1.05); }
+
+/* speed picker in overlay */
+.speed-pick { margin-bottom: 1.2rem; }
+.speed-pick p { font-size: .82rem; font-weight: 700; color: var(--muted); margin-bottom: .5rem; }
+.speed-pick-btns { display: flex; gap: .5rem; justify-content: center; }
+.spk-btn {
+  font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .85rem;
+  padding: .4rem 1.1rem; border-radius: 99px;
+  border: 2px solid #c7d2fe; background: var(--bg); color: var(--text); cursor: pointer;
+  transition: all .15s;
+}
+.spk-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.spk-btn:hover:not(.active) { border-color: var(--plight); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <h1>🧩 Resfebe Challenge</h1>
+    <p>Düşen resfebenin cevabını bul ve tıkla!</p>
+  </div>
+  <div class="header-right">
+    <div class="speed-selector">
+      <button class="spd-btn" data-speed="slow">🐢 Yavaş</button>
+      <button class="spd-btn active" data-speed="mid">🚶 Orta</button>
+      <button class="spd-btn" data-speed="fast">🚀 Hızlı</button>
+    </div>
+    <div class="scoreboard">
+      <div class="score-box cb"><span class="slabel">✅ Doğru</span><span class="sval" id="sc">0</span></div>
+      <div class="score-box wb"><span class="slabel">❌ Yanlış</span><span class="sval" id="sw">0</span></div>
+      <div class="score-box pb"><span class="slabel">⭐ Puan</span><span class="sval" id="sp">0</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- GAME AREA -->
+<div id="game-area">
+  <div id="toast"></div>
+  <div id="combo-bar">
+    <span id="combo-flame">🔥</span>
+    <div id="combo-text">Kombo <span id="combo-num">0</span>x &nbsp;+<span id="combo-pts">10</span></div>
+  </div>
+  <!-- info panel sits here -->
+  <div id="info-panel">
+    <div class="info-card" id="info-card">
+      <!-- filled dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- ANSWER POOL -->
+<div id="answer-pool">
+  <div id="answer-pool-inner"></div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="overlay-card" id="overlay-card">
+    <h2>🧩 Resfebe<br>Challenge</h2>
+    <p>Yukarıdan düşen resfebenin cevabını<br>alttaki seçeneklerden bul! 🎯</p>
+    <div class="speed-pick">
+      <p>⚡ Düşme Hızı Seç</p>
+      <div class="speed-pick-btns">
+        <button class="spk-btn" data-ospeed="slow">🐢 Yavaş</button>
+        <button class="spk-btn active" data-ospeed="mid">🚶 Orta</button>
+        <button class="spk-btn" data-ospeed="fast">🚀 Hızlı</button>
+      </div>
+    </div>
+    <button class="big-btn" onclick="startGame()">🚀 Oyunu Başlat</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA — emojis + answer + tr(Türkçe) + pron + example + exTr
+// ═══════════════════════════════════════════════════════════
+const ALL_PUZZLES = [
+  { emojis:"💧 + ⬇️",                      answer:"Waterfall",                pron:"WO-ter-fol",        tr:"Şelale",
+    ex:"The <em>waterfall</em> roared as we hiked past it.",
+    exTr:"Yanından geçerken şelale gürlüyordu." },
+  { emojis:"🔥 + 🐶",                       answer:"Hotdog",                   pron:"HOT-dog",           tr:"Sosisli sandviç",
+    ex:"She grabbed a <em>hotdog</em> from the street vendor.",
+    exTr:"Sokak satıcısından bir sosisli sandviç aldı." },
+  { emojis:"🌧️ + 🏹",                      answer:"Rainbow",                  pron:"REYN-bow",          tr:"Gökkuşağı",
+    ex:"A bright <em>rainbow</em> appeared after the storm.",
+    exTr:"Fırtınanın ardından parlak bir gökkuşağı belirdi." },
+  { emojis:"🍯 + 🌙",                       answer:"Honeymoon",                pron:"HUN-ee-moon",       tr:"Balayı",
+    ex:"They spent their <em>honeymoon</em> in Paris.",
+    exTr:"Balaylarını Paris'te geçirdiler." },
+  { emojis:"🧠 + ⛈️",                       answer:"Brainstorm",               pron:"BREYN-storm",       tr:"Beyin fırtınası yapmak",
+    ex:"Let's <em>brainstorm</em> ideas for the project.",
+    exTr:"Proje için fikirlerimizi beyin fırtınasıyla üretelim." },
+  { emojis:"✌️ + 🍰",                       answer:"Piece of cake",            pron:"PEES ov KEYK",      tr:"Çok kolay (deyim)",
+    ex:"The exam was a <em>piece of cake</em> for her.",
+    exTr:"Sınav onun için çocuk oyuncağıydı." },
+  { emojis:"🔙 + 🦴",                       answer:"Backbone",                 pron:"BAK-bown",          tr:"Omurga / Cesaret",
+    ex:"She showed real <em>backbone</em> in that meeting.",
+    exTr:"O toplantıda gerçek bir cesaret sergiledi." },
+  { emojis:"🌲 + 🍎",                       answer:"Pineapple",                pron:"PAY-nap-ul",        tr:"Ananas",
+    ex:"She added <em>pineapple</em> chunks to the fruit salad.",
+    exTr:"Meyve salatasına ananas dilimleri ekledi." },
+  { emojis:"🐮 + 👦",                       answer:"Cowboy",                   pron:"KAW-boy",           tr:"Kovboy",
+    ex:"The <em>cowboy</em> rode off into the sunset.",
+    exTr:"Kovboy gün batımına doğru at sürdü." },
+  { emojis:"🛏️ + 🐛",                      answer:"Bedbug",                   pron:"BED-bug",           tr:"Tahtakurusu",
+    ex:"The old hotel had a <em>bedbug</em> problem.",
+    exTr:"Eski otelin tahtakurusu sorunu vardı." },
+  { emojis:"💡 + 🏠",                       answer:"Lighthouse",               pron:"LAYT-haws",         tr:"Deniz feneri",
+    ex:"The <em>lighthouse</em> guided ships through the fog.",
+    exTr:"Deniz feneri gemilere sis içinde rehberlik etti." },
+  { emojis:"👁️ + 🌊 + 🇺",                 answer:"I see you",                pron:"AY SEE YOO",        tr:"Seni görüyorum",
+    ex:"<em>I see you</em> working so hard every day.",
+    exTr:"Her gün bu kadar çok çalıştığını görüyorum." },
+  { emojis:"🍎 + 👁️",                      answer:"Apple of my eye",          pron:"AP-ul ov may AY",   tr:"Gözümün nuru (deyim)",
+    ex:"My little sister is the <em>apple of my eye</em>.",
+    exTr:"Küçük kız kardeşim gözümün nurudur." },
+  { emojis:"🚫😟 + 🐝 + 😊",              answer:"Don't worry, be happy",    pron:"DOWNT WUR-ee BEE HAP-ee", tr:"Endişelenme, mutlu ol",
+    ex:"<em>Don't worry, be happy</em> — things will work out.",
+    exTr:"Endişelenme, mutlu ol — her şey yoluna girecek." },
+  { emojis:"🧠 + 💪",                       answer:"Knowledge is power",       pron:"NOL-ij IZ PAW-er",  tr:"Bilgi güçtür",
+    ex:"Read every day — <em>knowledge is power</em>.",
+    exTr:"Her gün oku — bilgi güçtür." },
+  { emojis:"🚫😫 + 🚫🏆",                  answer:"No pain, no gain",         pron:"NO PEYN NO GEYN",   tr:"Emeksiz yemek olmaz",
+    ex:"Train hard every morning — <em>no pain, no gain</em>.",
+    exTr:"Her sabah sert antrenman yap — emeksiz yemek olmaz." },
+  { emojis:"🌊 + 🫵 + ⏰",                  answer:"See you later",            pron:"SEE YOO LEY-ter",   tr:"Sonra görüşürüz",
+    ex:"I have to go now — <em>see you later</em>!",
+    exTr:"Şimdi gitmem lazım — sonra görüşürüz!" },
+  { emojis:"👁️ + 🐝 + 🔙",                answer:"I will be back",           pron:"AY WIL BEE BAK",    tr:"Geri döneceğim",
+    ex:"<em>I will be back</em> in five minutes.",
+    exTr:"Beş dakika içinde geri döneceğim." },
+  { emojis:"🌳 − ee + on",                  answer:"Tron",                     pron:"TRON",              tr:"Tron (bilim kurgu filmi)",
+    ex:"<em>Tron</em> is a classic sci-fi movie from 1982.",
+    exTr:"Tron, 1982'den kalma klasik bir bilim kurgu filmidir." },
+  { emojis:"🧢 + tain",                     answer:"Captain",                  pron:"KAP-tin",           tr:"Kaptan",
+    ex:"The <em>captain</em> announced a smooth flight ahead.",
+    exTr:"Kaptan, rahat bir uçuş olacağını duyurdu." },
+  { emojis:"🍐 − r + son",                  answer:"Person",                   pron:"PER-sun",           tr:"Kişi / İnsan",
+    ex:"Every <em>person</em> deserves kindness.",
+    exTr:"Her insan nezaketi hak eder." },
+  { emojis:"🛋️ − fa + ft",                 answer:"Soft",                     pron:"SOFT",              tr:"Yumuşak / Nazik",
+    ex:"The kitten had very <em>soft</em> fur.",
+    exTr:"Yavru kedinin çok yumuşak tüyleri vardı." },
+  { emojis:"📅 − te + rk",                  answer:"Dark",                     pron:"DARK",              tr:"Karanlık",
+    ex:"The forest was <em>dark</em> and silent at midnight.",
+    exTr:"Orman gece yarısı karanlık ve sessizdi." },
+  { emojis:"🐝 + 🍃 − f + ve + 📥 + 🫵",   answer:"Believe in yourself",      pron:"bih-LEEV in yer-SELF", tr:"Kendine inan",
+    ex:"<em>Believe in yourself</em> and you can do anything.",
+    exTr:"Kendine inan ve her şeyi başarabilirsin." },
+  { emojis:"🔓 − n + r + 🧠",              answer:"Open your brain",          pron:"OH-pen yer BREYN",  tr:"Zihnini aç",
+    ex:"<em>Open your brain</em> to new ideas every day.",
+    exTr:"Her gün yeni fikirlere zihnini aç." },
+  { emojis:"📞 + 🫵 + ⏰",                  answer:"Call you later",           pron:"KOL YOO LEY-ter",   tr:"Seni sonra ararım",
+    ex:"I'm in a meeting — I'll <em>call you later</em>.",
+    exTr:"Toplantıdayım — seni sonra ararım." },
+  { emojis:"🐱 + 🏃 + 🛍️",                answer:"Cat out of the bag",       pron:"KAT awt ov the BAG", tr:"Sırrı ifşa etmek",
+    ex:"She let the <em>cat out of the bag</em> about the party.",
+    exTr:"Parti hakkındaki sırrı ağzından kaçırdı." },
+  { emojis:"⏲️ + 🦅",                      answer:"Time flies",               pron:"TAYM FLAYZ",        tr:"Zaman uçup gidiyor",
+    ex:"<em>Time flies</em> when you're having fun.",
+    exTr:"Eğlenirken zaman uçup gidiyor." },
+  { emojis:"🍔 + 😴 + 🔄",                 answer:"Eat, sleep, repeat",       pron:"EET SLEEP rih-PEET", tr:"Ye, uyu, tekrarla",
+    ex:"During exam week it was just <em>eat, sleep, repeat</em>.",
+    exTr:"Sınav haftasında sadece ye, uyu, tekrarlaydı." },
+  { emojis:"📖 − d + l + 🧬",              answer:"Real life",                pron:"REEL LAYF",         tr:"Gerçek hayat",
+    ex:"The movie was inspired by <em>real life</em> events.",
+    exTr:"Film gerçek hayat olaylarından esinlendi." },
+];
+
+// ═══════════════════════════════════════════════════════════
+// SPEED CONFIG  (ms to fall full screen)
+// ═══════════════════════════════════════════════════════════
+const SPEEDS = { slow: 14000, mid: 9000, fast: 5000 };
+let chosenSpeed = 'mid';
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let scoreCorrect = 0, scoreWrong = 0, scorePoints = 0;
+let wrongList    = []; // puzzles answered wrong or missed
+let combo        = 0;  // current streak of correct answers
+let maxCombo     = 0;  // highest combo reached
+let remaining    = [];
+let currentPuzzle= null;
+let fallingEl    = null;
+let fallTimer    = null;
+let fallStart    = null;
+let fallDuration = SPEEDS.mid;
+let pausedAt     = null;   // elapsed ms when paused
+let gameAreaH    = 0;
+let isPaused     = false;
+let infoCountdownTimer = null;
+let currentSpeakBtn = null;
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMBO & POINTS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Calculate points for a correct answer:
+ *   Base: 10
+ *   + Combo bonus: (combo - 1) * 2  (starts at 0 for combo=1, +2 each subsequent)
+ *   + Position bonus: card in top 33% of game area → +5
+ *   + Speed bonus: fast mode → +2
+ */
+function calcPoints(cardTopPx) {
+  let pts = 10;
+  // combo bonus: every streak adds 2 more (combo=1→+0, combo=2→+2, combo=3→+4 …)
+  if (combo > 1) pts += (combo - 1) * 2;
+  // position bonus — card caught in top third of game area
+  if (cardTopPx !== null && cardTopPx < gameAreaH / 3) pts += 5;
+  // speed bonus
+  if (chosenSpeed === 'fast') pts += 2;
+  return pts;
+}
+
+function addPoints(delta, x, y, label) {
+  scorePoints += delta;
+  const el = document.getElementById('sp');
+  el.textContent = scorePoints;
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  // floating label
+  const fl = document.createElement('div');
+  fl.className = 'pt-float';
+  fl.textContent = label || (delta > 0 ? '+' + delta : String(delta));
+  fl.style.color  = delta > 0 ? 'var(--correct)' : 'var(--wrong)';
+  fl.style.left   = (x || window.innerWidth / 2) + 'px';
+  fl.style.top    = (y || 80) + 'px';
+  document.body.appendChild(fl);
+  setTimeout(() => fl.remove(), 950);
+}
+
+function updateComboBar() {
+  const bar  = document.getElementById('combo-bar');
+  const num  = document.getElementById('combo-num');
+  const pts  = document.getElementById('combo-pts');
+  const flame= document.getElementById('combo-flame');
+
+  if (combo <= 1) {
+    bar.className = '';   // hide when no streak
+    return;
+  }
+  bar.classList.add('visible');
+  num.textContent = combo;
+  // preview next reward
+  const preview = 10 + (combo - 1) * 2 + (chosenSpeed === 'fast' ? 2 : 0);
+  pts.textContent = preview;
+
+  // level theming
+  bar.className = 'visible ' +
+    (combo >= 6 ? 'lv4' : combo >= 4 ? 'lv3' : combo >= 2 ? 'lv2' : 'lv1');
+  flame.textContent = combo >= 6 ? '🔥🔥' : combo >= 4 ? '🔥' : '⚡';
+}
+
+function breakCombo() {
+  combo = 0;
+  const bar = document.getElementById('combo-bar');
+  bar.className = '';
+}
+
+
+function getBestEnglishVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  const isEn = v => v.lang.toLowerCase().startsWith('en')
+                 && !v.name.toLowerCase().includes('turkish')
+                 && !v.name.toLowerCase().includes('türkçe');
+  return voices.find(v => v.lang==='en-US' && isEn(v))
+      || voices.find(v => v.lang==='en-GB' && isEn(v))
+      || voices.find(v => isEn(v))
+      || null;
+}
+
+function speak(text, btnEl) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  if (currentSpeakBtn) { currentSpeakBtn.classList.remove('speaking'); currentSpeakBtn=null; }
+
+  const doIt = () => {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.82; utt.pitch = 1;
+    const v = getBestEnglishVoice();
+    if (v) { utt.voice = v; utt.lang = v.lang; } else { utt.lang = 'en-US'; }
+    if (btnEl) {
+      currentSpeakBtn = btnEl;
+      btnEl.classList.add('speaking');
+      utt.onend = utt.onerror = () => { btnEl.classList.remove('speaking'); currentSpeakBtn=null; };
+    }
+    window.speechSynthesis.speak(utt);
+  };
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) { doIt(); }
+  else { window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged=null; doIt(); }; }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPEED BUTTONS (header + overlay)
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.spd-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.spd-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chosenSpeed = btn.dataset.speed;
+    fallDuration = SPEEDS[chosenSpeed];
+    // sync overlay buttons
+    document.querySelectorAll('.spk-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.ospeed === chosenSpeed);
+    });
+  });
+});
+
+document.querySelectorAll('.spk-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.spk-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chosenSpeed = btn.dataset.ospeed;
+    fallDuration = SPEEDS[chosenSpeed];
+    // sync header buttons
+    document.querySelectorAll('.spd-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.speed === chosenSpeed);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
+function startGame() {
+  scoreCorrect = scoreWrong = scorePoints = 0;
+  wrongList    = [];
+  combo        = 0;
+  maxCombo     = 0;
+  fallDuration = SPEEDS[chosenSpeed];
+  remaining    = shuffle([...ALL_PUZZLES]);
+  document.getElementById('sc').textContent = '0';
+  document.getElementById('sw').textContent = '0';
+  document.getElementById('sp').textContent = '0';
+  document.getElementById('overlay').style.display = 'none';
+  hideInfoPanel();
+  buildAnswerPool();
+  nextPuzzle();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANSWER POOL — random positions (shuffled flex order)
+// ═══════════════════════════════════════════════════════════
+function buildAnswerPool() {
+  const pool = document.getElementById('answer-pool-inner');
+  pool.innerHTML = '';
+  const answers = shuffle(ALL_PUZZLES.map(p => p.answer));
+  answers.forEach(ans => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.textContent = ans;
+    btn.dataset.answer = ans;
+    // random order attribute for extra shuffle feel
+    btn.style.order = Math.floor(Math.random() * 60);
+    btn.addEventListener('click', () => onAnswerClick(ans, btn));
+    pool.appendChild(btn);
+  });
+}
+
+// Re-randomise pool positions each round (called after correct answer)
+function reshufflePool() {
+  document.querySelectorAll('.ans-btn:not(:disabled)').forEach(btn => {
+    btn.style.order = Math.floor(Math.random() * 60);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// NEXT PUZZLE
+// ═══════════════════════════════════════════════════════════
+function nextPuzzle() {
+  if (remaining.length === 0) { endGame(); return; }
+  const idx = Math.floor(Math.random() * remaining.length);
+  currentPuzzle = remaining[idx];
+  spawnFalling(currentPuzzle);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPAWN FALLING CARD
+// ═══════════════════════════════════════════════════════════
+function spawnFalling(puzzle) {
+  if (fallingEl)  { fallingEl.remove(); fallingEl = null; }
+  if (fallTimer)  { cancelAnimationFrame(fallTimer); fallTimer = null; }
+
+  isPaused  = false;
+  pausedAt  = null;
+  gameAreaH = document.getElementById('game-area').clientHeight;
+
+  const card = document.createElement('div');
+  card.className = 'falling-card';
+  card.innerHTML = `
+    <div class="card-num">🧩 Resfebe #${ALL_PUZZLES.indexOf(puzzle)+1}</div>
+    <div class="emoji-line">${puzzle.emojis}</div>
+  `;
+
+  // random horizontal start (keep card mostly visible)
+  const cardW = Math.min(window.innerWidth * 0.82, 300);
+  const margin = 20;
+  const maxLeft = window.innerWidth - cardW - margin;
+  const randLeft = margin + Math.random() * Math.max(0, maxLeft - margin);
+  card.style.left = randLeft + 'px';
+  card.style.transform = 'none';
+
+  document.getElementById('game-area').appendChild(card);
+  fallingEl = card;
+
+  fallStart = performance.now();
+  const cardH = 100;
+
+  function step(now) {
+    if (isPaused) { fallTimer = requestAnimationFrame(step); return; }
+    const elapsed = now - fallStart;
+    const progress = elapsed / fallDuration;
+    const topPx = -cardH + (gameAreaH + cardH) * progress;
+    card.style.top = topPx + 'px';
+    if (progress >= 1) { onMissed(); return; }
+    fallTimer = requestAnimationFrame(step);
+  }
+  fallTimer = requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANSWER CLICK
+// ═══════════════════════════════════════════════════════════
+function onAnswerClick(answer, btn) {
+  if (isPaused || !currentPuzzle) return;
+
+  if (answer === currentPuzzle.answer) {
+    // ✅ CORRECT
+    isPaused = true;
+    cancelAnimationFrame(fallTimer);
+    scoreCorrect++;
+    document.getElementById('sc').textContent = scoreCorrect;
+
+    // get card position for top-bonus check
+    const cardTopPx = fallingEl ? parseFloat(fallingEl.style.top) : null;
+
+    // increment combo
+    combo++;
+    if (combo > maxCombo) maxCombo = combo;
+
+    // calculate points
+    const earned = calcPoints(cardTopPx);
+    const btnRect = btn.getBoundingClientRect();
+
+    // build a descriptive float label
+    let floatLabel = '+' + earned;
+    if (combo > 1)                            floatLabel += ' 🔥x' + combo;
+    if (cardTopPx !== null && cardTopPx < gameAreaH / 3) floatLabel += ' 🎯';
+    if (chosenSpeed === 'fast')               floatLabel += ' ⚡';
+
+    addPoints(earned, btnRect.left + btnRect.width / 2, btnRect.top, floatLabel);
+    updateComboBar();
+
+    btn.classList.add('flash-correct');
+    setTimeout(() => { btn.disabled = true; }, 300);
+
+    // card pop
+    if (fallingEl) {
+      fallingEl.style.animation = 'none';
+      fallingEl.style.transition = 'none';
+      fallingEl.style.transformOrigin = 'center center';
+      fallingEl.style.animation = 'correctPop .4s ease forwards';
+    }
+
+    spawnParticles(fallingEl);
+
+    // remove from remaining
+    remaining = remaining.filter(p => p !== currentPuzzle);
+
+    // show info panel after 300ms
+    const puzzle = currentPuzzle;
+    setTimeout(() => {
+      if (fallingEl) { fallingEl.remove(); fallingEl = null; }
+      showInfoPanel(puzzle, earned, combo);
+      reshufflePool();
+    }, 350);
+
+  } else {
+    // ❌ WRONG — break combo
+    scoreWrong++;
+    document.getElementById('sw').textContent = scoreWrong;
+    breakCombo();
+
+    const btnRect = btn.getBoundingClientRect();
+    addPoints(-10, btnRect.left + btnRect.width / 2, btnRect.top, '−10');
+
+    if (!wrongList.find(p => p === currentPuzzle)) wrongList.push(currentPuzzle);
+
+    btn.classList.add('flash-wrong');
+    setTimeout(() => btn.classList.remove('flash-wrong'), 400);
+    if (fallingEl) {
+      fallingEl.classList.add('wrong-flash');
+      setTimeout(() => { if (fallingEl) fallingEl.classList.remove('wrong-flash'); }, 420);
+    }
+    showToast('❌ Tekrar Dene!', false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INFO PANEL — 6s countdown
+// ═══════════════════════════════════════════════════════════
+function showInfoPanel(puzzle, earned, currentCombo) {
+  isPaused = true;
+  const panel = document.getElementById('info-panel');
+  const total = 5;
+  const circ  = 2 * Math.PI * 18;
+
+  const comboBadge = (currentCombo >= 2)
+    ? `<span class="combo-badge">🔥 ${currentCombo}x Kombo!</span>` : '';
+
+  panel.innerHTML = `
+    <div class="info-card" id="info-card">
+      <div class="info-word">
+        ${puzzle.answer}
+        <button class="speak-btn" id="speak-now">🔊 Dinle</button>
+        ${comboBadge}
+      </div>
+      <div class="info-tr">🇹🇷 ${puzzle.tr} &nbsp;·&nbsp; <em style="color:var(--plight);font-style:normal">${puzzle.pron}</em></div>
+      <div class="info-ex">
+        <div class="en">💬 ${puzzle.ex}</div>
+        <div class="tr-ex">🇹🇷 ${puzzle.exTr}</div>
+      </div>
+      <div class="countdown-wrap">
+        <div class="countdown-ring">
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <circle class="bg" cx="22" cy="22" r="18"/>
+            <circle class="fg" id="cring" cx="22" cy="22" r="18"
+              style="stroke-dasharray:${circ};stroke-dashoffset:0"/>
+          </svg>
+          <div class="countdown-num" id="cnum">${total}</div>
+        </div>
+        <span class="countdown-label">saniye içinde devam edecek</span>
+      </div>
+    </div>
+  `;
+
+  panel.classList.add('show');
+
+  // auto-speak
+  setTimeout(() => {
+    const spkBtn = document.getElementById('speak-now');
+    if (spkBtn) speak(puzzle.answer, spkBtn);
+  }, 200);
+
+  document.getElementById('speak-now').addEventListener('click', () => {
+    speak(puzzle.answer, document.getElementById('speak-now'));
+  });
+
+  // countdown
+  let remaining_s = total;
+  const cring = document.getElementById('cring');
+  const cnum  = document.getElementById('cnum');
+
+  if (infoCountdownTimer) clearInterval(infoCountdownTimer);
+  infoCountdownTimer = setInterval(() => {
+    remaining_s--;
+    if (cnum) cnum.textContent = remaining_s;
+    const offset = circ * (1 - remaining_s / total);
+    if (cring) {
+      cring.style.strokeDashoffset = offset;
+      if (remaining_s <= 2) cring.style.stroke = 'var(--wrong)';
+    }
+    if (remaining_s <= 0) {
+      clearInterval(infoCountdownTimer);
+      hideInfoPanel();
+      nextPuzzle();
+    }
+  }, 1000);
+}
+
+function hideInfoPanel() {
+  if (infoCountdownTimer) { clearInterval(infoCountdownTimer); infoCountdownTimer = null; }
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  document.getElementById('info-panel').classList.remove('show');
+  isPaused = false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MISSED
+// ═══════════════════════════════════════════════════════════
+function onMissed() {
+  scoreWrong++;
+  document.getElementById('sw').textContent = scoreWrong;
+  breakCombo();
+  addPoints(-10, window.innerWidth / 2, 120, '−10');
+  if (!wrongList.find(p => p === currentPuzzle)) wrongList.push(currentPuzzle);
+  if (fallingEl) { fallingEl.remove(); fallingEl = null; }
+  showToast('⏰ Kaçırdın! −10', false);
+  setTimeout(nextPuzzle, 700);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, ok) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (ok ? ' ok' : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 900);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════════════════════
+function spawnParticles(anchor) {
+  if (!anchor) return;
+  const rect     = anchor.getBoundingClientRect();
+  const gameRect = document.getElementById('game-area').getBoundingClientRect();
+  const cx = rect.left + rect.width/2  - gameRect.left;
+  const cy = rect.top  + rect.height/2 - gameRect.top;
+  const fx = ['⭐','✨','🎉','💫','🌟','🎊'];
+  for (let i=0;i<8;i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = fx[i % fx.length];
+    const angle = (i/8)*Math.PI*2;
+    const dist  = 55 + Math.random()*40;
+    p.style.setProperty('--dx', Math.cos(angle)*dist+'px');
+    p.style.setProperty('--dy', Math.sin(angle)*dist+'px');
+    p.style.left = cx+'px'; p.style.top = cy+'px';
+    document.getElementById('game-area').appendChild(p);
+    setTimeout(() => p.remove(), 800);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// END GAME
+// ═══════════════════════════════════════════════════════════
+function endGame() {
+  if (fallingEl) { fallingEl.remove(); fallingEl = null; }
+  if (fallTimer) { cancelAnimationFrame(fallTimer); fallTimer = null; }
+  hideInfoPanel();
+
+  const total = ALL_PUZZLES.length;
+  const pct   = Math.round(scoreCorrect/(scoreCorrect+scoreWrong)*100)||0;
+  const emoji = pct>=90?'🏆':pct>=70?'🎉':pct>=50?'👏':'💪';
+  const ptColor = scorePoints >= 0 ? 'var(--correct)' : 'var(--wrong)';
+  const comboLine = maxCombo >= 2
+    ? `<p style="font-size:.85rem;color:var(--accent);font-weight:800;margin-bottom:.8rem">🔥 En yüksek kombo: ${maxCombo}x</p>`
+    : '';
+
+  // build wrong list HTML
+  let wrongHTML = '';
+  if (wrongList.length === 0) {
+    wrongHTML = `<div style="text-align:center;color:var(--correct);font-weight:800;font-size:.9rem;margin-bottom:1rem">🌟 Hiç hata yapmadın! Mükemmel!</div>`;
+  } else {
+    const items = wrongList.map(p => `
+      <div class="wrong-item">
+        <span class="wi-emoji">❌</span>
+        <div>
+          <div class="wi-answer">${p.answer}</div>
+          <div class="wi-tr">${p.emojis} &nbsp;→&nbsp; 🇹🇷 ${p.tr}</div>
+        </div>
+      </div>`).join('');
+    wrongHTML = `
+      <div class="wrong-list-wrap">
+        <h3>❌ Hata Yapılan / Kaçırılan (${wrongList.length})</h3>
+        ${items}
+      </div>`;
+  }
+
+  const oc = document.getElementById('overlay-card');
+  oc.innerHTML = `
+    <h2>${emoji} Oyun Bitti!</h2>
+    <p>Tüm ${total} resfebe tamamlandı! &nbsp; Doğruluk: <strong>${pct}%</strong></p>
+    <div class="final-scores">
+      <div class="fsb c"><div class="fsv">${scoreCorrect}</div><div class="fsl">✅ Doğru</div></div>
+      <div class="fsb w"><div class="fsv">${scoreWrong}</div><div class="fsl">❌ Yanlış</div></div>
+      <div class="fsb p"><div class="fsv" style="color:${ptColor}">${scorePoints}</div><div class="fsl">⭐ Puan</div></div>
+    </div>
+    ${comboLine}
+    ${wrongHTML}
+    <div class="speed-pick">
+      <p>⚡ Düşme Hızı</p>
+      <div class="speed-pick-btns">
+        <button class="spk-btn${chosenSpeed==='slow'?' active':''}" data-ospeed="slow">🐢 Yavaş</button>
+        <button class="spk-btn${chosenSpeed==='mid'?' active':''}" data-ospeed="mid">🚶 Orta</button>
+        <button class="spk-btn${chosenSpeed==='fast'?' active':''}" data-ospeed="fast">🚀 Hızlı</button>
+      </div>
+    </div>
+    <button class="big-btn" onclick="startGame()">🔄 Tekrar Oyna</button>
+  `;
+  // re-bind overlay speed buttons
+  oc.querySelectorAll('.spk-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      oc.querySelectorAll('.spk-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      chosenSpeed = btn.dataset.ospeed;
+      fallDuration = SPEEDS[chosenSpeed];
+      document.querySelectorAll('.spd-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.speed===chosenSpeed);
+      });
+    });
+  });
+
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  gameAreaH = document.getElementById('game-area').clientHeight;
+});
+
+// preload voices
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+</script>
+</body>
+</html>
